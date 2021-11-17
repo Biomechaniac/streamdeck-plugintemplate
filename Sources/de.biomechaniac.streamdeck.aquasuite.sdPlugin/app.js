@@ -16,22 +16,42 @@ $SD.on('connected', (jsonObj) => connected(jsonObj));
 
 function connected(jsn) {
     // Subscribe to the willAppear and other events
-    $SD.on('com.elgato.template.action.willAppear', (jsonObj) => action.onWillAppear(jsonObj));
-    $SD.on('com.elgato.template.action.keyUp', (jsonObj) => action.onKeyUp(jsonObj));
-    $SD.on('com.elgato.template.action.sendToPlugin', (jsonObj) => action.onSendToPlugin(jsonObj));
-    $SD.on('com.elgato.template.action.didReceiveSettings', (jsonObj) => action.onDidReceiveSettings(jsonObj));
-    $SD.on('com.elgato.template.action.propertyInspectorDidAppear', (jsonObj) => {
+    $SD.on('de.biomechaniac.streamdeck.aquasuite.actionmonitorsensor.willAppear', (jsonObj) => actionMonitorSensor.onWillAppear(jsonObj));
+    $SD.on('de.biomechaniac.streamdeck.aquasuite.actionmonitorsensor.keyUp', (jsonObj) => actionMonitorSensor.onKeyUp(jsonObj));
+    $SD.on('de.biomechaniac.streamdeck.aquasuite.actionmonitorsensor.keyDown', (jsonObj) => actionMonitorSensor.onKeyDown(jsonObj));
+    $SD.on('de.biomechaniac.streamdeck.aquasuite.actionmonitorsensor.sendToPlugin', (jsonObj) => actionMonitorSensor.onSendToPlugin(jsonObj));
+    $SD.on('de.biomechaniac.streamdeck.aquasuite.actionmonitorsensor.didReceiveSettings', (jsonObj) => actionMonitorSensor.onDidReceiveSettings(jsonObj));
+    $SD.on('de.biomechaniac.streamdeck.aquasuite.actionmonitorsensor.didReceiveGlobalSettings', (jsonObj) => actionMonitorSensor.onDidReceiveGlobalSettings(jsonObj));
+    $SD.on('de.biomechaniac.streamdeck.aquasuite.actionmonitorsensor.propertyInspectorDidAppear', (jsonObj) => {
         console.log('%c%s', 'color: white; background: black; font-size: 13px;', '[app.js]propertyInspectorDidAppear:');
     });
-    $SD.on('com.elgato.template.action.propertyInspectorDidDisappear', (jsonObj) => {
+    $SD.on('de.biomechaniac.streamdeck.aquasuite.actionmonitorsensor.propertyInspectorDidDisappear', (jsonObj) => {
         console.log('%c%s', 'color: white; background: red; font-size: 13px;', '[app.js]propertyInspectorDidDisappear:');
     });
 };
 
 // ACTIONS
 
-const action = {
+const actionMonitorSensor = {
     settings:{},
+    globalSettings:{},
+    onDidReceiveGlobalSettings: function(jsn) {
+        console.log('%c%s', 'color: white; background: red; font-size: 15px;', '[app.js]onDidReceiveGlobalSettings:');
+
+        this.globalSettings = Utils.getProp(jsn, 'payload.settings', {});
+        this.doSomeThing(this.settings, 'onDidReceiveGlobalSettings', 'orange');
+
+        /**
+         * In this example we put a HTML-input element with id='mynameinput'
+         * into the Property Inspector's DOM. If you enter some data into that
+         * input-field it get's saved to Stream Deck persistently and the plugin
+         * will receive the updated 'didReceiveSettings' event.
+         * Here we look for this setting and use it to change the title of
+         * the key.
+         */
+
+         this.setTitle(jsn);
+    },
     onDidReceiveSettings: function(jsn) {
         console.log('%c%s', 'color: white; background: red; font-size: 15px;', '[app.js]onDidReceiveSettings:');
 
@@ -81,16 +101,20 @@ const action = {
         this.doSomeThing(jsn, 'onKeyUp', 'green');
     },
 
-    onSendToPlugin: function (jsn) {
+    onKeyDown: function (jsn) {
+        this.doSomeThing(jsn, 'onKeyDown', 'red');
+    },
+
+    onSendToPlugin: async function (jsn) {
         /**
          * This is a message sent directly from the Property Inspector 
          * (e.g. some value, which is not saved to settings) 
          * You can send this event from Property Inspector (see there for an example)
          */ 
 
+        console.log(jsn);
         const sdpi_collection = Utils.getProp(jsn, 'payload.sdpi_collection', {});
-        if (sdpi_collection.value && sdpi_collection.value !== undefined) {
-            this.doSomeThing({ [sdpi_collection.key] : sdpi_collection.value }, 'onSendToPlugin', 'fuchsia');            
+        if (sdpi_collection.key && sdpi_collection.key === 'aquasuite_accesscode_value' && sdpi_collection.value && sdpi_collection.value !== undefined) {
         }
     },
 

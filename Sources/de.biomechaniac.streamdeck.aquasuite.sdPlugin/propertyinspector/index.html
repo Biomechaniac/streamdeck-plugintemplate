@@ -5,7 +5,7 @@
         <meta name=viewport content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=no,minimal-ui,viewport-fit=cover">
         <meta name=apple-mobile-web-app-capable content=yes>
         <meta name=apple-mobile-web-app-status-bar-style content=black>
-        <title>com.elgato.template Property Inspector</title>
+        <title>de.biomechaniac.streamdeck.aquasuite Property Inspector</title>
         <link rel="stylesheet" href="css/sdpi.css">
     </head>
     <body>
@@ -22,30 +22,31 @@
             the control.
           -->
 
-            <div class="sdpi-item">
-                <div class="sdpi-item-label">Name</div>
-                <input id="mynameinput" class="sdpi-item-value" type="text" value="" />
-             </div>
+          <div class="sdpi-item" id="select_sensor">
+            <div class="sdpi-item-label">Select Sensor</div>
+            <select class="sdpi-item-value select" id="select_sensor_dropdown">
+            </select>
+          </div>
 
-            <div type="textarea" class="sdpi-item">
-                <div class="sdpi-item-label up20" data-localize="Message">Message</div>
-                <div class="sdpi-item-value textarea">
-                  <textarea type="textarea" maxlength="50" id="mymessage" class="three-lines"></textarea>
-                  <label for="mymessage">0/50</label>
-                </div>
-              </div>
+          <div type="textarea" class="sdpi-item" id="polling_rate">
+            <div class="sdpi-item-label">Polling rate (seconds)</div>
+              <input class="sdpi-item-value" type="text" id="polling_rate_value" required placeholder="30" pattern="\d*"></input>
+          </div>
 
-              <div class="sdpi-item">
-                <div class="sdpi-item-label">Button</div>
-                <button class="sdpi-item-value" id="clickme" value="Click Me" data-localize="Click me">Click Me</button>
-              </div>
-
+          <div type="textarea" class="sdpi-item" id="aquasuite_accesscode">
+            <div class="sdpi-item-label">Aquasuite access code</div>
+              <input class="sdpi-item-value" type="text" id="aquasuite_accesscode_value" required placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"></input>
+            </div>
+            <div class="sdpi-item-label">Save & look for sensors</div>
+               <button id="aquasuite_accesscode_savebutton" onclick="clickTheButton()">Do it!</button>
+            </div>
 
               <!-- END OF SDPI-WRAPPER -->
 
         </div>
 
         <div class="sdpi-info-label hidden" style="top: -1000;" value=""></div>
+
         <script src="js/common.js"></script>
         <script src="js/common_pi.js"></script>
         <script src="js/index_pi.js"></script>

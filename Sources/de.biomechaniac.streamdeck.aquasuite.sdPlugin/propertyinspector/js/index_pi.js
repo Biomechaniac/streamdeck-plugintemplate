@@ -81,6 +81,7 @@ $SD.on('connected', (jsn) => {
 
 $SD.on('sendToPropertyInspector', jsn => {
     const pl = jsn.payload;
+    console.log(jsn);
     /**
      *  This is an example, how you could show an error to the user
      */
@@ -91,14 +92,6 @@ $SD.on('sendToPropertyInspector', jsn => {
                 ${pl.hasOwnProperty('info') ? pl.info : ''}
             </details>
         </div>`;
-    } else {
-
-        /**
-         *
-         * Do something with the data sent from the plugin
-         * e.g. update some elements in the Property Inspector's UI.
-         *
-         */
     }
 });
 
@@ -173,7 +166,7 @@ $SD.on('piDataChanged', (returnValue) => {
            postMessage(window.xtWindow);
         }
 
-    } else {
+    }  else {
 
         /* SAVE THE VALUE TO SETTINGS */
         saveSettings(returnValue);
@@ -182,6 +175,32 @@ $SD.on('piDataChanged', (returnValue) => {
         sendValueToPlugin(returnValue, 'sdpi_collection');
     }
 });
+
+async function clickTheButton(){
+    var returnValue = {
+        key: 'aquasuite_accesscode_value',
+        value: document.getElementById("aquasuite_accesscode_value").value
+    }
+    var accesscode = document.getElementById("aquasuite_accesscode_value").value;
+    const resp = await fetch("https://aquasuite.aquacomputer.de/circonus/"+accesscode);
+    const respjson = await resp.json();
+    console.log("response" + JSON.stringify(respjson));
+
+    var select = document.getElementById("select_sensor_dropdown");
+    for (option in select.options) { select.options.remove(0); }
+    Object.keys(respjson).map(k => {
+        var opt = document.createElement('option');
+        opt.innerHTML = k;
+        opt.value = k;
+        return opt;
+    }).forEach(opt => select.appendChild(opt));
+
+    /* SAVE THE VALUE TO SETTINGS */
+    saveSettings(returnValue);
+
+    /* SEND THE VALUES TO PLUGIN */
+    sendValueToPlugin(returnValue, 'sdpi_collection');
+}
 
 /**
  * Below are a bunch of helpers to make your DOM interactive
@@ -240,6 +259,7 @@ $SD.on('piDataChanged', (returnValue) => {
         };
 
         $SD.connection.send(JSON.stringify(json));
+        console.log(json);
     }
 }
 

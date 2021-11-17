@@ -1,0 +1,61 @@
+{
+  "Actions": [
+    {
+      "Icon": "action/images/actionMonitorSensor", 
+      "Name": "Monitor sensor", 
+      "States": [
+        {
+          "Image": "action/images/actionMonitorSensor"
+        }
+      ], 
+      "Tooltip": "Lets you view one sensor's data", 
+      "UUID": "de.biomechaniac.streamdeck.aquasuite.actionMonitorSensor"
+    },
+    {
+      "Icon": "action/images/actionMultiMonitorCycling", 
+      "Name": "Multi-Monitoring (cycling)", 
+      "States": [
+        {
+          "Image": "action/images/actionMultiMonitorCycling"
+        }
+      ], 
+      "Tooltip": "Lets you view multiple sensors' data. Cycles between selected sensors when pressed.", 
+      "UUID": "de.biomechaniac.streamdeck.aquasuite.actionMultiMonitorCycling"
+    },
+    {
+      "Icon": "action/images/actionMultiMonitorAll", 
+      "Name": "Multi-Monitoring (all)", 
+      "States": [
+        {
+          "Image": "action/images/actionMultiMonitorAll"
+        }
+      ], 
+      "Tooltip": "Opens a view containing all sensors in your aquasuites data export.", 
+      "UUID": "de.biomechaniac.streamdeck.aquasuite.actionMultiMonitorAll"
+    }
+  ], 
+  "SDKVersion": 2,
+  "Author": "Biomechaniac", 
+  "CodePath": "index.html", 
+  "PropertyInspectorPath": "propertyinspector/index.html", 
+  "Description": "Plugin for monitoring your aquasuite devices on the stream deck.", 
+  "Icon": "action/images/acicon",
+  "Name": "Aquasuite Monitoring", 
+  "Version": "1.0.0",
+  "Category": "Aquasuite Monitoring",
+  "CategoryIcon": "action/images/acicon", 
+  "OS": [
+    {
+        "Platform": "mac", 
+        "MinimumVersion" : "10.11"
+    },
+    {
+        "Platform": "windows", 
+        "MinimumVersion" : "10"
+    }
+  ],
+  "Software": 
+    {
+        "MinimumVersion" : "4.1"
+  }
+}

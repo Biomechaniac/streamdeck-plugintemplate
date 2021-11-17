@@ -1,0 +1,16 @@
+{
+  "Description": "Plugin um Sensordaten aus der Aquasuite anzuzeigen", 
+  "Name": "Aquasuite Monitoring", 
+  "Category": "Templates", 
+  "de.biomechaniac.streamdeck.aquasuite.action": {
+    "Name": "Sensor überwachen", 
+    "Tooltip": "Überwachung eines einzelnen Sensors"
+  },
+  "Localization": {
+    "More info": "Mehr Infos",
+    "Message": "Nachricht",
+    "Click Me": "Klicke mich",
+    "Button": "Taste"
+
+  }
+}
