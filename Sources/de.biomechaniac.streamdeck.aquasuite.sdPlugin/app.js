@@ -18,8 +18,6 @@ function connected(jsn) {
     // Subscribe to the willAppear and other events
     $SD.on('de.biomechaniac.streamdeck.aquasuite.actionmonitorsensor.willAppear', (jsonObj) => actionMonitorSensor.onWillAppear(jsonObj));
     $SD.on('de.biomechaniac.streamdeck.aquasuite.actionmonitorsensor.willDisappear', (jsonObj) => actionMonitorSensor.onWillDisappear(jsonObj));
-    $SD.on('de.biomechaniac.streamdeck.aquasuite.actionmonitorsensor.keyUp', (jsonObj) => actionMonitorSensor.onKeyUp(jsonObj));
-    $SD.on('de.biomechaniac.streamdeck.aquasuite.actionmonitorsensor.keyDown', (jsonObj) => actionMonitorSensor.onKeyDown(jsonObj));
     $SD.on('de.biomechaniac.streamdeck.aquasuite.actionmonitorsensor.sendToPlugin', (jsonObj) => actionMonitorSensor.onSendToPlugin(jsonObj));
     $SD.on('de.biomechaniac.streamdeck.aquasuite.actionmonitorsensor.didReceiveSettings', (jsonObj) => actionMonitorSensor.onDidReceiveSettings(jsonObj));
     $SD.on('de.biomechaniac.streamdeck.aquasuite.actionmonitorsensor.didReceiveGlobalSettings', (jsonObj) => actionMonitorSensor.onDidReceiveGlobalSettings(jsonObj));
@@ -43,16 +41,6 @@ var actionMonitorSensor = {
         console.log('%c%s', 'color: white; background: red; font-size: 15px;', '[app.js]onDidReceiveGlobalSettings:');
 
         //$SD.api.setGlobalSettings(Utils.getProp(jsn, 'payload.settings', {}));
-        this.doSomeThing(this.settingsPerAction[jsn.context], 'onDidReceiveGlobalSettings', 'orange');
-
-        /**
-         * In this example we put a HTML-input element with id='mynameinput'
-         * into the Property Inspector's DOM. If you enter some data into that
-         * input-field it get's saved to Stream Deck persistently and the plugin
-         * will receive the updated 'didReceiveSettings' event.
-         * Here we look for this setting and use it to change the title of
-         * the key.
-         */
 
          this.setTitle(jsn);
     },
@@ -92,13 +80,15 @@ var actionMonitorSensor = {
         */
         this.settingsPerAction[jsn.context] = jsn.payload.settings;
 
+        var aquasuite_accesscode_value = jsn.payload.settings.aquasuite_accesscode_value;
         // setup of fetch data from aquasuite web export
-        if(this.intervalFetchDataPerAccessKey[jsn.payload.settings.aquasuite_accesscode_value] === undefined){
-            this.intervalFetchDataPerAccessKey[jsn.payload.settings.aquasuite_accesscode_value] = 
-            setInterval(this.fetchAquasuiteData(jsn.payload.settings.aquasuite_accesscode_value), 15000);
+        if(aquasuite_accesscode_value !== undefined &&
+            this.intervalFetchDataPerAccessKey[aquasuite_accesscode_value] === undefined){
+            this.intervalFetchDataPerAccessKey[aquasuite_accesscode_value] = 
+                                setInterval(this.fetchAquasuiteData(aquasuite_accesscode_value), 15000);
             
             // initial call
-            this.fetchAquasuiteData(jsn.payload.settings.aquasuite_accesscode_value)();
+            this.fetchAquasuiteData(aquasuite_accesscode_value)();
         }
 
         // setup of updating streamdeck data
@@ -112,10 +102,12 @@ var actionMonitorSensor = {
         // clear fetch data interval (per access key) -> todo dont remove interval if other actions still present for that access key
         if(this.intervalFetchDataPerAccessKey[aquasuite_accesscode_value] !== undefined){
             clearInterval(this.intervalFetchDataPerAccessKey[aquasuite_accesscode_value]);
+            delete this.intervalFetchDataPerAccessKey[aquasuite_accesscode_value];
         }
 
         // clear update streamdeck interval (per action)
         clearInterval(this.intervalUpdateSensorDataOnStreamdeck[jsn.context]);
+        delete this.intervalUpdateSensorDataOnStreamdeck[jsn.context];
     },
 
 
@@ -140,15 +132,6 @@ var actionMonitorSensor = {
                 $SD.api.showAlert(jsn.context);
             }
         }
-    },
-
-    onKeyUp: function (jsn) {
-        this.doSomeThing(jsn, 'onKeyUp', 'green');
-    },
-
-    onKeyDown: function (jsn) {
-        this.doSomeThing(jsn, 'onKeyDown', 'red');
-        this.setTitle(jsn, "keydown");
     },
 
     onSendToPlugin: async function (jsn) {
@@ -191,19 +174,8 @@ var actionMonitorSensor = {
      */
 
     setTitle: function(jsn, title) {
-        console.log("watch the key on your StreamDeck - it got a new title...", title);
+        console.log("Updating Title...", title);
         $SD.api.setTitle(jsn.context, title);
-    },
-
-    /**
-     * Finally here's a method which gets called from various events above.
-     * This is just an idea on how you can act on receiving some interesting message
-     * from Stream Deck.
-     */
-
-    doSomeThing: function(inJsonData, caller, tagColor) {
-        console.log('%c%s', `color: white; background: ${tagColor || 'grey'}; font-size: 15px;`, `[app.js]doSomeThing from: ${caller}`);
-        // console.log(inJsonData);
     }, 
 
 
