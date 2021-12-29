@@ -57,3 +57,20 @@ Fire up your preferred code-editor and open `app.js`.
 Remove what you don't need and start coding (e.g. in the `onKeyDown` method)
 
 Happy coding...
+
+
+# Aquasuite Monitoring Plugin
+
+## How-To
+
+### Aquasuite setup
+
+- In your aquasuite go to "aquasuite web" → "Data export"
+- Follow the instructions to export all the sensor data that you want to display on your streamdeck
+- Then go to "Data access" and copy your access code
+
+### Plugin setup
+
+- Download the Plugin from the Streamdeck Store
+- Drag the Action to your Streamdeck
+- Enter your Aquasuite access code
