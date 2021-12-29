@@ -34,6 +34,7 @@ let sdpiWrapper = document.querySelector('.sdpi-wrapper');
  */
 
 let settings;
+let globalSettings;
 
  /**
   * The 'connected' event is the first event sent to Property Inspector, after it's instance
@@ -69,8 +70,15 @@ $SD.on('connected', (jsn) => {
      */
 
     settings = Utils.getProp(jsn, 'actionInfo.payload.settings', false);
+    console.log("streamdeck", $SD);
+    globalSettings = $SD.api.getGlobalSettings($SD.actionInfo.context);
+    console.log("globalsettings", globalSettings);
+    console.log("settings", settings);
     if (settings) {
         updateUI(settings);
+    }
+    if(globalSettings){
+        updateUI(globalSettings);
     }
 });
 
@@ -101,14 +109,19 @@ const updateUI = (pl) => {
             const foundElement = document.querySelector(`#${e}`);
             console.log(`searching for: #${e}`, 'found:', foundElement);
             if (foundElement && foundElement.type !== 'file') {
-                foundElement.value = pl[e];
-                const maxl = foundElement.getAttribute('maxlength') || 50;
+                if(foundElement.type === 'select-one'){
+                    clearSensorDropdownDataAndRefill(pl[e]);
+                }else{
+                    foundElement.value = pl[e];
+                    const maxl = foundElement.getAttribute('maxlength') || 50;
+                }
                 const labels = document.querySelectorAll(`[for='${foundElement.id}']`);
                 if (labels.length) {
                     for (let x of labels) {
                         x.textContent = maxl ? `${foundElement.value.length}/${maxl}` : `${foundElement.value.length}`;
                     }
                 }
+                
             }
         }
    })
@@ -150,31 +163,27 @@ $SD.on('piDataChanged', (returnValue) => {
 
     console.log('%c%s', 'color: white; background: blue}; font-size: 15px;', 'piDataChanged');
     console.log(returnValue);
+
+    if (returnValue.key === 'select_sensor_dropdown') {
+        var selectForSettings = {
+            key: 'select_sensor_dropdown_value',
+            value: returnValue.value
+        }
+        returnValue = selectForSettings;
+    } 
+    /* SAVE THE VALUE TO SETTINGS */
+    saveSettings(returnValue);
+
+    /* SEND THE VALUES TO PLUGIN */
+    sendValueToPlugin(returnValue, 'sdpi_collection');
     
-    if (returnValue.key === 'clickme') {
-
-        postMessage = (w) => {
-            w.postMessage(
-                Object.assign({}, $SD.applicationInfo.application, {action: $SD.actionInfo.action})
-                ,'*');
-        }
-
-        if (!window.xtWindow || window.xtWindow.closed) {
-            window.xtWindow  = window.open('../externalWindow.html', 'External Window');
-            setTimeout(() => postMessage(window.xtWindow), 200);
-        } else {
-           postMessage(window.xtWindow);
-        }
-
-    }  else {
-
-        /* SAVE THE VALUE TO SETTINGS */
-        saveSettings(returnValue);
-
-        /* SEND THE VALUES TO PLUGIN */
-        sendValueToPlugin(returnValue, 'sdpi_collection');
-    }
 });
+
+async function fetchAquasuiteData(accessCode){
+    const resp = await fetch("https://aquasuite.aquacomputer.de/circonus/"+accessCode);
+    const respjson = await resp.json();
+    return respjson;
+}
 
 async function clickTheButton(){
     var returnValue = {
@@ -182,24 +191,34 @@ async function clickTheButton(){
         value: document.getElementById("aquasuite_accesscode_value").value
     }
     var accesscode = document.getElementById("aquasuite_accesscode_value").value;
-    const resp = await fetch("https://aquasuite.aquacomputer.de/circonus/"+accesscode);
-    const respjson = await resp.json();
-    console.log("response" + JSON.stringify(respjson));
+    const respjson = await fetchAquasuiteData(accesscode);
 
-    var select = document.getElementById("select_sensor_dropdown");
-    for (option in select.options) { select.options.remove(0); }
-    Object.keys(respjson).map(k => {
-        var opt = document.createElement('option');
-        opt.innerHTML = k;
-        opt.value = k;
-        return opt;
-    }).forEach(opt => select.appendChild(opt));
+    clearSensorDropdownDataAndRefill(Object.keys(respjson));
+    $SD.api.setGlobalSettings($SD.actionInfo.context, returnValue);
 
+    var selectForSettings = {
+        key: 'select_sensor_dropdown',
+        value: [...document.getElementById("select_sensor_dropdown").childNodes].map(child => child.value).filter(Boolean)
+    }
     /* SAVE THE VALUE TO SETTINGS */
-    saveSettings(returnValue);
+    saveSettings(selectForSettings);
 
     /* SEND THE VALUES TO PLUGIN */
     sendValueToPlugin(returnValue, 'sdpi_collection');
+}
+
+function clearSensorDropdownDataAndRefill(keys){
+    var select = document.getElementById("select_sensor_dropdown");
+    for (option in select.options) { select.options.remove(0); }
+    keys.map(k => {
+        var opt = document.createElement('option');
+        opt.innerHTML = k;
+        opt.value = k;
+        if(settings.select_sensor_dropdown_value === k){
+            opt.selected = true;
+        }
+        return opt;
+    }).forEach(opt => select.appendChild(opt));
 }
 
 /**
@@ -220,6 +239,7 @@ async function clickTheButton(){
  */
 
  function saveSettings(sdpi_collection) {
+     console.log("savesettings", sdpi_collection);
 
     if (typeof sdpi_collection !== 'object') return;
 

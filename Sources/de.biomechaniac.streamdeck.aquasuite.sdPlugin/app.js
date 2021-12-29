@@ -17,6 +17,7 @@ $SD.on('connected', (jsonObj) => connected(jsonObj));
 function connected(jsn) {
     // Subscribe to the willAppear and other events
     $SD.on('de.biomechaniac.streamdeck.aquasuite.actionmonitorsensor.willAppear', (jsonObj) => actionMonitorSensor.onWillAppear(jsonObj));
+    $SD.on('de.biomechaniac.streamdeck.aquasuite.actionmonitorsensor.willDisappear', (jsonObj) => actionMonitorSensor.onWillDisappear(jsonObj));
     $SD.on('de.biomechaniac.streamdeck.aquasuite.actionmonitorsensor.keyUp', (jsonObj) => actionMonitorSensor.onKeyUp(jsonObj));
     $SD.on('de.biomechaniac.streamdeck.aquasuite.actionmonitorsensor.keyDown', (jsonObj) => actionMonitorSensor.onKeyDown(jsonObj));
     $SD.on('de.biomechaniac.streamdeck.aquasuite.actionmonitorsensor.sendToPlugin', (jsonObj) => actionMonitorSensor.onSendToPlugin(jsonObj));
@@ -32,14 +33,15 @@ function connected(jsn) {
 
 // ACTIONS
 
-const actionMonitorSensor = {
-    settings:{},
-    globalSettings:{},
+var actionMonitorSensor = {
+    settingsPerAction:{},
+    DestinationEnum : Object.freeze({"HARDWARE_AND_SOFTWARE":0, "HARDWARE_ONLY":1, "SOFTWARE_ONLY":2}),
+    intervalFetchDataPerAccessKey:{},
     onDidReceiveGlobalSettings: function(jsn) {
         console.log('%c%s', 'color: white; background: red; font-size: 15px;', '[app.js]onDidReceiveGlobalSettings:');
 
-        this.globalSettings = Utils.getProp(jsn, 'payload.settings', {});
-        this.doSomeThing(this.settings, 'onDidReceiveGlobalSettings', 'orange');
+        //$SD.api.setGlobalSettings(Utils.getProp(jsn, 'payload.settings', {}));
+        this.doSomeThing(this.settingsPerAction[jsn.context], 'onDidReceiveGlobalSettings', 'orange');
 
         /**
          * In this example we put a HTML-input element with id='mynameinput'
@@ -55,8 +57,7 @@ const actionMonitorSensor = {
     onDidReceiveSettings: function(jsn) {
         console.log('%c%s', 'color: white; background: red; font-size: 15px;', '[app.js]onDidReceiveSettings:');
 
-        this.settings = Utils.getProp(jsn, 'payload.settings', {});
-        this.doSomeThing(this.settings, 'onDidReceiveSettings', 'orange');
+        this.settingsPerAction[jsn.context] = Utils.getProp(jsn, 'payload.settings', {});
 
         /**
          * In this example we put a HTML-input element with id='mynameinput'
@@ -78,7 +79,6 @@ const actionMonitorSensor = {
      */
 
     onWillAppear: function (jsn) {
-        console.log("You can cache your settings in 'onWillAppear'", jsn.payload.settings);
         /**
          * The willAppear event carries your saved settings (if any). You can use these settings
          * to setup your plugin or save the settings for later use. 
@@ -88,13 +88,33 @@ const actionMonitorSensor = {
          * 
          * $SD.api.getSettings(jsn.context);
         */
-        this.settings = jsn.payload.settings;
+        this.settingsPerAction[jsn.context] = jsn.payload.settings;
 
-        // Nothing in the settings pre-fill, just something for demonstration purposes
-        if (!this.settings || Object.keys(this.settings).length === 0) {
-            this.settings.mynameinput = 'TEMPLATE';
+        this.updateSensorData(jsn)();
+        this.intervalFetchDataPerAccessKey[jsn.context] = setInterval(this.updateSensorData(jsn), 15000);
+    },
+
+    onWillDisappear: function (jsn) {
+        clearInterval(this.intervalFetchDataPerAccessKey[jsn.context]);
+    },
+
+
+    updateSensorData: function(jsn){
+        return async () =>{
+            try{
+                const response = await this.fetchAquasuiteData(this.settingsPerAction[jsn.context].aquasuite_accesscode_value);
+                this.setTitle(jsn, this.settingsPerAction[jsn.context].select_sensor_dropdown_value + "\r\n" + response[this.settingsPerAction[jsn.context].select_sensor_dropdown_value]);
+            }catch(error){
+                this.setTitle(jsn, "Error");
+                $SD.api.showAlert(jsn.context);
+            }
         }
-        this.setTitle(jsn);
+    },
+
+    fetchAquasuiteData: async function(accessCode){
+        const resp = await fetch("https://aquasuite.aquacomputer.de/circonus/"+accessCode);
+        const respjson = await resp.json();
+        return respjson;
     },
 
     onKeyUp: function (jsn) {
@@ -103,6 +123,7 @@ const actionMonitorSensor = {
 
     onKeyDown: function (jsn) {
         this.doSomeThing(jsn, 'onKeyDown', 'red');
+        this.setTitle(jsn, "keydown");
     },
 
     onSendToPlugin: async function (jsn) {
@@ -127,9 +148,9 @@ const actionMonitorSensor = {
         console.log('saveSettings:', jsn);
         if (sdpi_collection.hasOwnProperty('key') && sdpi_collection.key != '') {
             if (sdpi_collection.value && sdpi_collection.value !== undefined) {
-                this.settings[sdpi_collection.key] = sdpi_collection.value;
-                console.log('setSettings....', this.settings);
-                $SD.api.setSettings(jsn.context, this.settings);
+                this.settingsPerAction[jsn.context][sdpi_collection.key] = sdpi_collection.value;
+                console.log('setSettings....', this.settingsPerAction[jsn.context]);
+                $SD.api.setSettings(jsn.context, this.settingsPerAction[jsn.context]);
             }
         }
     },
@@ -144,11 +165,9 @@ const actionMonitorSensor = {
      * 
      */
 
-    setTitle: function(jsn) {
-        if (this.settings && this.settings.hasOwnProperty('mynameinput')) {
-            console.log("watch the key on your StreamDeck - it got a new title...", this.settings.mynameinput);
-            $SD.api.setTitle(jsn.context, this.settings.mynameinput);
-        }
+    setTitle: function(jsn, title) {
+        console.log("watch the key on your StreamDeck - it got a new title...", title);
+        $SD.api.setTitle(jsn.context, title);
     },
 
     /**
