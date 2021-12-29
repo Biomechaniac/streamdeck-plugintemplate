@@ -113,12 +113,16 @@ var actionMonitorSensor = {
 
     updateSensorData: function(jsn){
         return () =>{
-            var accessCode = this.settingsPerAction[jsn.context].aquasuite_accesscode_value;
-            var sensorName = this.settingsPerAction[jsn.context].select_sensor_dropdown_value;
+            var actionSettings = this.settingsPerAction[jsn.context];
+            var accessCode = actionSettings.aquasuite_accesscode_value;
 
             const data = this.dataPerAccessKey[accessCode];
-            this.setTitle(jsn, sensorName + "\r\n" + data[sensorName]);
+            var value = data[actionSettings.select_sensor_dropdown_value];
             
+            var sensorName = actionSettings.sensor_name_value ?? actionSettings.select_sensor_dropdown_value;
+            var sensorUnit = actionSettings.sensor_unit_value ? " " + actionSettings.sensor_unit_value : "";
+
+            this.setTitle(jsn, sensorName + "\r\n" + value + sensorUnit);
         }
     },
 
