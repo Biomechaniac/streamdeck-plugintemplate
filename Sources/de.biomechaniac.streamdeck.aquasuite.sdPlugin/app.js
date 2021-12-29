@@ -37,6 +37,8 @@ var actionMonitorSensor = {
     settingsPerAction:{},
     DestinationEnum : Object.freeze({"HARDWARE_AND_SOFTWARE":0, "HARDWARE_ONLY":1, "SOFTWARE_ONLY":2}),
     intervalFetchDataPerAccessKey:{},
+    dataPerAccessKey:{},
+    intervalUpdateSensorDataOnStreamdeck:{},
     onDidReceiveGlobalSettings: function(jsn) {
         console.log('%c%s', 'color: white; background: red; font-size: 15px;', '[app.js]onDidReceiveGlobalSettings:');
 
@@ -90,31 +92,54 @@ var actionMonitorSensor = {
         */
         this.settingsPerAction[jsn.context] = jsn.payload.settings;
 
+        // setup of fetch data from aquasuite web export
+        if(this.intervalFetchDataPerAccessKey[jsn.payload.settings.aquasuite_accesscode_value] === undefined){
+            this.intervalFetchDataPerAccessKey[jsn.payload.settings.aquasuite_accesscode_value] = 
+            setInterval(this.fetchAquasuiteData(jsn.payload.settings.aquasuite_accesscode_value), 15000);
+            
+            // initial call
+            this.fetchAquasuiteData(jsn.payload.settings.aquasuite_accesscode_value)();
+        }
+
+        // setup of updating streamdeck data
+        this.intervalUpdateSensorDataOnStreamdeck[jsn.context] = setInterval(this.updateSensorData(jsn), 15000);
+        // initial call
         this.updateSensorData(jsn)();
-        this.intervalFetchDataPerAccessKey[jsn.context] = setInterval(this.updateSensorData(jsn), 15000);
     },
 
     onWillDisappear: function (jsn) {
-        clearInterval(this.intervalFetchDataPerAccessKey[jsn.context]);
+        var aquasuite_accesscode_value = this.settingsPerAction[jsn.context].aquasuite_accesscode_value;
+        // clear fetch data interval (per access key) -> todo dont remove interval if other actions still present for that access key
+        if(this.intervalFetchDataPerAccessKey[aquasuite_accesscode_value] !== undefined){
+            clearInterval(this.intervalFetchDataPerAccessKey[aquasuite_accesscode_value]);
+        }
+
+        // clear update streamdeck interval (per action)
+        clearInterval(this.intervalUpdateSensorDataOnStreamdeck[jsn.context]);
     },
 
 
     updateSensorData: function(jsn){
+        return () =>{
+            var accessCode = this.settingsPerAction[jsn.context].aquasuite_accesscode_value;
+            var sensorName = this.settingsPerAction[jsn.context].select_sensor_dropdown_value;
+
+            const data = this.dataPerAccessKey[accessCode];
+            this.setTitle(jsn, sensorName + "\r\n" + data[sensorName]);
+            
+        }
+    },
+
+    fetchAquasuiteData: function(accessCode){
         return async () =>{
             try{
-                const response = await this.fetchAquasuiteData(this.settingsPerAction[jsn.context].aquasuite_accesscode_value);
-                this.setTitle(jsn, this.settingsPerAction[jsn.context].select_sensor_dropdown_value + "\r\n" + response[this.settingsPerAction[jsn.context].select_sensor_dropdown_value]);
+                const resp = await fetch("https://aquasuite.aquacomputer.de/circonus/"+accessCode);
+                this.dataPerAccessKey[accessCode] = await resp.json();
             }catch(error){
                 this.setTitle(jsn, "Error");
                 $SD.api.showAlert(jsn.context);
             }
         }
-    },
-
-    fetchAquasuiteData: async function(accessCode){
-        const resp = await fetch("https://aquasuite.aquacomputer.de/circonus/"+accessCode);
-        const respjson = await resp.json();
-        return respjson;
     },
 
     onKeyUp: function (jsn) {
@@ -183,4 +208,3 @@ var actionMonitorSensor = {
 
 
 };
-
