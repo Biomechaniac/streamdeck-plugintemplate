@@ -69,6 +69,7 @@ var actionMonitorSensor = {
      */
 
     onWillAppear: function (jsn) {
+        this.setTitle(jsn, "Loading...");
         /**
          * The willAppear event carries your saved settings (if any). You can use these settings
          * to setup your plugin or save the settings for later use. 
@@ -93,8 +94,10 @@ var actionMonitorSensor = {
 
         // setup of updating streamdeck data
         this.intervalUpdateSensorDataOnStreamdeck[jsn.context] = setInterval(this.updateSensorData(jsn), 15000);
-        // initial call
-        this.updateSensorData(jsn)();
+        setTimeout(
+            // initial call, wait for aquasuite response
+            this.updateSensorData(jsn)
+            , 200);
     },
 
     onWillDisappear: function (jsn) {
